@@ -17,22 +17,24 @@ public class LmsRepository : ILmsRepository
     public async Task<LocationMembershipDto?> GetMembershipAsync(Guid userId, Guid locationId, CancellationToken cancellationToken = default)
     {
         var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
-        var membership = await _db.UserLocations.AsNoTracking()
+        if (user is null)
+        {
+            return null;
+        }
+
+        if (user.IsSuperAdmin)
+        {
+            var loc = await _db.Locations.AsNoTracking()
+                .FirstOrDefaultAsync(l => l.Id == locationId && l.AgencyId == user.AgencyId && l.IsActive, cancellationToken);
+            return loc is null
+                ? null
+                : new LocationMembershipDto { LocationId = loc.Id, Name = loc.Name, Role = Roles.Owner };
+        }
+
+        return await _db.UserLocations.AsNoTracking()
             .Where(ul => ul.UserId == userId && ul.LocationId == locationId && ul.Location.IsActive)
             .Select(ul => new LocationMembershipDto { LocationId = ul.LocationId, Name = ul.Location.Name, Role = ul.Role })
             .FirstOrDefaultAsync(cancellationToken);
-
-        if (membership is not null) return membership;
-        if (user?.IsSuperAdmin == true)
-        {
-            var loc = await _db.Locations.AsNoTracking().FirstOrDefaultAsync(l => l.Id == locationId && l.AgencyId == user.AgencyId, cancellationToken);
-            if (loc is not null)
-            {
-                return new LocationMembershipDto { LocationId = loc.Id, Name = loc.Name, Role = Roles.Owner };
-            }
-        }
-
-        return null;
     }
 
     public async Task<LocationStatsDto> GetStatsAsync(Guid locationId, CancellationToken cancellationToken = default)
@@ -542,15 +544,147 @@ public class LmsRepository : ILmsRepository
 
     public async Task<IReadOnlyList<AdminUserDto>> ListUsersAsync(Guid locationId, CancellationToken cancellationToken = default)
     {
-        return await _db.UserLocations.AsNoTracking().Where(ul => ul.LocationId == locationId)
-            .Select(ul => new AdminUserDto
+        var location = await _db.Locations.AsNoTracking().FirstOrDefaultAsync(l => l.Id == locationId, cancellationToken);
+        if (location is null)
+        {
+            return [];
+        }
+
+        var memberships = await _db.UserLocations.AsNoTracking()
+            .Where(ul => ul.LocationId == locationId)
+            .ToDictionaryAsync(ul => ul.UserId, ul => ul.Role, cancellationToken);
+
+        var users = await _db.Users.AsNoTracking()
+            .Where(u => u.AgencyId == location.AgencyId)
+            .OrderByDescending(u => u.IsSuperAdmin)
+            .ThenBy(u => u.Email)
+            .ToListAsync(cancellationToken);
+
+        return users.Select(u => new AdminUserDto
+        {
+            UserId = u.Id,
+            Email = u.Email,
+            FirstName = u.FirstName,
+            LastName = u.LastName,
+            ContactNo = u.ContactNo,
+            Activated = u.Activated,
+            IsSuperAdmin = u.IsSuperAdmin,
+            Role = memberships.TryGetValue(u.Id, out var role) ? role : (u.IsSuperAdmin ? Roles.Owner : Roles.Parent)
+        }).ToList();
+    }
+
+    public async Task<AdminUserDto?> UpdateUserAsync(Guid locationId, Guid actorUserId, Guid userId, UpdateAdminUserDto dto, CancellationToken cancellationToken = default)
+    {
+        var location = await _db.Locations.FirstOrDefaultAsync(l => l.Id == locationId, cancellationToken);
+        var actor = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == actorUserId, cancellationToken);
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.AgencyId == location!.AgencyId, cancellationToken);
+        if (location is null || actor is null || user is null)
+        {
+            return null;
+        }
+
+        if (user.IsSuperAdmin && actorUserId != userId && !actor.IsSuperAdmin)
+        {
+            return null;
+        }
+
+        var email = dto.Email.Trim().ToLowerInvariant();
+        var role = dto.Role.Trim().ToLowerInvariant();
+        if (!Roles.All.Contains(role))
+        {
+            role = Roles.Parent;
+        }
+
+        var emailTaken = await _db.Users.AnyAsync(
+            u => u.Id != userId && (u.Email.ToLower() == email || u.Username.ToLower() == email),
+            cancellationToken);
+        if (emailTaken)
+        {
+            throw new InvalidOperationException("That email is already in use.");
+        }
+
+        user.FirstName = dto.FirstName.Trim();
+        user.LastName = dto.LastName.Trim();
+        user.Email = email;
+        user.Username = email;
+        user.ContactNo = string.IsNullOrWhiteSpace(dto.ContactNo) ? null : dto.ContactNo.Trim();
+        user.Activated = dto.Activated;
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+
+        var membership = await _db.UserLocations.FirstOrDefaultAsync(ul => ul.UserId == userId && ul.LocationId == locationId, cancellationToken);
+        if (membership is null)
+        {
+            _db.UserLocations.Add(new UserLocation
             {
-                UserId = ul.UserId,
-                Email = ul.User.Email,
-                FirstName = ul.User.FirstName,
-                LastName = ul.User.LastName,
-                Role = ul.Role
-            }).OrderBy(u => u.Role).ThenBy(u => u.Email).ToListAsync(cancellationToken);
+                UserId = userId,
+                LocationId = locationId,
+                Role = role,
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+        }
+        else
+        {
+            membership.Role = role;
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+        return new AdminUserDto
+        {
+            UserId = user.Id,
+            Email = user.Email,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            ContactNo = user.ContactNo,
+            Role = role,
+            Activated = user.Activated,
+            IsSuperAdmin = user.IsSuperAdmin
+        };
+    }
+
+    public async Task<string?> DeleteUserAsync(Guid locationId, Guid actorUserId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        if (actorUserId == userId)
+        {
+            return "You cannot delete your own account here.";
+        }
+
+        var location = await _db.Locations.AsNoTracking().FirstOrDefaultAsync(l => l.Id == locationId, cancellationToken);
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (location is null || user is null || user.AgencyId != location.AgencyId)
+        {
+            return "User not found.";
+        }
+
+        if (user.IsSuperAdmin)
+        {
+            return "Super admin accounts cannot be deleted.";
+        }
+
+        var memberships = await _db.UserLocations.Where(ul => ul.UserId == userId).ToListAsync(cancellationToken);
+        _db.UserLocations.RemoveRange(memberships);
+        _db.ExternalLogins.RemoveRange(_db.ExternalLogins.Where(l => l.UserId == userId));
+        _db.AccountActivationTokens.RemoveRange(_db.AccountActivationTokens.Where(t => t.UserId == userId));
+        _db.PasswordResetTokens.RemoveRange(_db.PasswordResetTokens.Where(t => t.UserId == userId));
+        try
+        {
+            _db.Users.Remove(user);
+            await _db.SaveChangesAsync(cancellationToken);
+            return null;
+        }
+        catch (DbUpdateException)
+        {
+            _db.ChangeTracker.Clear();
+            var existing = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+            if (existing is null)
+            {
+                return "User not found.";
+            }
+
+            existing.Activated = false;
+            existing.UpdatedAt = DateTimeOffset.UtcNow;
+            await _db.SaveChangesAsync(cancellationToken);
+            return "This user still has students or lessons, so the account was deactivated instead of deleted.";
+        }
     }
 
     private Task<Guid?> TutorId(Guid locationId, Guid userId, CancellationToken cancellationToken)

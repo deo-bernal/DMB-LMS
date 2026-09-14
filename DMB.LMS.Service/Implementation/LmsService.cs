@@ -60,4 +60,8 @@ public class LmsService : ILmsService
         => _repo.ListProgressAsync(locationId, userId, role, cancellationToken);
     public Task<IReadOnlyList<AdminUserDto>> ListUsersAsync(Guid locationId, CancellationToken cancellationToken = default)
         => _repo.ListUsersAsync(locationId, cancellationToken);
+    public Task<AdminUserDto?> UpdateUserAsync(Guid locationId, Guid actorUserId, Guid userId, UpdateAdminUserDto dto, CancellationToken cancellationToken = default)
+        => _repo.UpdateUserAsync(locationId, actorUserId, userId, dto, cancellationToken);
+    public Task<string?> DeleteUserAsync(Guid locationId, Guid actorUserId, Guid userId, CancellationToken cancellationToken = default)
+        => _repo.DeleteUserAsync(locationId, actorUserId, userId, cancellationToken);
 }

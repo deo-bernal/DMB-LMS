@@ -11,6 +11,7 @@ public interface IAuthRepository
     (string PasswordHash, string PasswordSalt) CreatePasswordHash(string password);
     Task<IReadOnlyList<LocationMembershipDto>> GetUserLocationsAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<AuthTokenLoginResult> IssueJwtForUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<(LoggedInUserDto? User, string? Error)> UpdateOwnProfileAsync(Guid userId, UpdateOwnProfileDto dto, CancellationToken cancellationToken = default);
 }
 
 public interface IRegistrationRepository

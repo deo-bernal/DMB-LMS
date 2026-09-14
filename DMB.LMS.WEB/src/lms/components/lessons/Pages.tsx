@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import http from "../../services/http.service";
-import type { Assignment, Availability, Booking, Course, Material, Progress, Student, Subject, TutorCard, TutorProfile, AdminUser } from "../../models";
+import type { Assignment, Availability, Booking, Course, Material, Progress, Student, Subject, TutorCard, TutorProfile } from "../../models";
+import ManageUsersPanel from "../admin/ManageUsersPanel";
 import { useAuth } from "../../../contexts/JWTAuthContext";
 
 export function LessonsPage() {
@@ -257,22 +258,15 @@ export function TutorMePage() {
 
 export function AdminPage() {
   const { locationId } = useAuth();
-  const [users, setUsers] = useState<AdminUser[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   useEffect(() => {
     if (!locationId) return;
-    http.get<AdminUser[]>("/admin/users").then((r) => setUsers(r.data));
     http.get<Booking[]>("/bookings").then((r) => setBookings(r.data));
   }, [locationId]);
   return (
     <div>
-      <h1>Admin</h1>
-      <div className="card">
-        <h2>Users</h2>
-        <table className="table"><thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>
-          <tbody>{users.map((u) => <tr key={u.userId}><td>{u.firstName} {u.lastName}</td><td>{u.email}</td><td>{u.role}</td></tr>)}</tbody>
-        </table>
-      </div>
+      <h1>Manage users</h1>
+      <ManageUsersPanel />
       <div className="card" style={{ marginTop: "1rem" }}>
         <h2>Bookings</h2>
         {bookings.map((b) => <div key={b.id}>{b.studentName} · {b.tutorName} · {b.status} · {new Date(b.startsAt).toLocaleString()}</div>)}

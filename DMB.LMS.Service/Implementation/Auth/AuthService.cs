@@ -32,6 +32,9 @@ public class AuthService : IAuthService
 
     public Task<LoggedInUserDto?> GetLoggedInUserAsync(Guid userId, CancellationToken cancellationToken = default)
         => _authRepository.GetLoggedInUserAsync(userId, cancellationToken);
+
+    public Task<(LoggedInUserDto? User, string? Error)> UpdateOwnProfileAsync(Guid userId, UpdateOwnProfileDto dto, CancellationToken cancellationToken = default)
+        => _authRepository.UpdateOwnProfileAsync(userId, dto, cancellationToken);
 }
 
 public class RegistrationService : IRegistrationService

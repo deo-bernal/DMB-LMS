@@ -15,6 +15,7 @@ import StudentList from "./lms/components/students/List";
 import FindTutors from "./lms/components/tutors/Find";
 import TutorView from "./lms/components/tutors/Profile";
 import { AdminPage, AssignmentsPage, CoursesPage, LessonsPage, ProgressPage, SchedulePage, TutorMePage } from "./lms/components/lessons/Pages";
+import AccountPage from "./lms/components/account/AccountPage";
 import { roles, staffRoles } from "./lms/enums/roles";
 
 export default function App() {
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="progress" element={<ProgressPage />} />
             <Route path="profile" element={<ProtectedRoute allowedRoles={[roles.tutor, ...staffRoles]}><TutorMePage /></ProtectedRoute>} />
             <Route path="admin" element={<ProtectedRoute allowedRoles={[...staffRoles]}><AdminPage /></ProtectedRoute>} />
+            <Route path="account" element={<AccountPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

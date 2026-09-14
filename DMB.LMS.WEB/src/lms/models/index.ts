@@ -1,5 +1,19 @@
 export type LocationMembership = { locationId: string; name: string; role: string };
-export type LoginResponse = { token: string; locations: LocationMembership[]; currentLocationId?: string; firstName?: string };
+export type LoginResponse = {
+  token: string;
+  locations: LocationMembership[];
+  currentLocationId?: string;
+  firstName?: string;
+  isSuperAdmin?: boolean;
+};
+export type AuthProfile = {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  contactNo?: string;
+  isSuperAdmin: boolean;
+};
 export type LocationStats = { parentCount: number; tutorCount: number; studentCount: number; upcomingLessons: number; openRequests: number };
 export type Student = { id: string; parentUserId: string; firstName: string; lastName: string; gradeLevel: string; notes?: string };
 export type Subject = { id: string; name: string };
@@ -21,4 +35,15 @@ export type Assignment = {
   submissionId?: string; submissionText?: string; score?: number; feedback?: string; studentId?: string; studentName?: string;
 };
 export type Progress = { studentId: string; studentName: string; courseId: string; courseTitle: string; materialsDone: number; assignmentsGraded: number; lessonsAttended: number };
-export type AdminUser = { userId: string; email: string; firstName: string; lastName: string; role: string };
+export type AdminUser = {
+  userId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  contactNo?: string;
+  role: string;
+  activated: boolean;
+  isSuperAdmin: boolean;
+  linkedProviders?: string[];
+  passwordSet?: boolean;
+};

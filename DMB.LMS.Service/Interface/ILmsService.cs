@@ -30,6 +30,8 @@ public interface ILmsService
     Task<AssignmentDto> GradeSubmissionAsync(Guid locationId, Guid submissionId, GradeDto dto, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ProgressDto>> ListProgressAsync(Guid locationId, Guid userId, string role, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AdminUserDto>> ListUsersAsync(Guid locationId, CancellationToken cancellationToken = default);
+    Task<AdminUserDto?> UpdateUserAsync(Guid locationId, Guid actorUserId, Guid userId, UpdateAdminUserDto dto, CancellationToken cancellationToken = default);
+    Task<string?> DeleteUserAsync(Guid locationId, Guid actorUserId, Guid userId, CancellationToken cancellationToken = default);
 }
 
 public interface IFileService

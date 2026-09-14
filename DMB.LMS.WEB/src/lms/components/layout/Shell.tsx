@@ -7,9 +7,9 @@ import { roles } from "../../enums/roles";
 const SITE = "https://www.dmbwebsolutions.com";
 
 export default function Shell() {
-  const { locations, locationId, setLocationId, logout, firstName, currentRole } = useAuth();
+  const { locations, locationId, setLocationId, logout, firstName, currentRole, isSuperAdmin } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
-  const isStaff = currentRole === roles.owner || currentRole === roles.admin;
+  const isStaff = currentRole === roles.owner || currentRole === roles.admin || isSuperAdmin;
   const isTutor = currentRole === roles.tutor || isStaff;
   const isParent = currentRole === roles.parent || isStaff;
 
@@ -41,8 +41,9 @@ export default function Shell() {
           <NavLink to="/courses">Courses</NavLink>
           <NavLink to="/assignments">Assignments</NavLink>
           <NavLink to="/progress">Progress</NavLink>
-          {isStaff ? <NavLink to="/admin">Admin</NavLink> : null}
+          {isStaff ? <NavLink to="/admin">Manage users</NavLink> : null}
           <div className="nav-label">Your profile</div>
+          <NavLink to="/account">Account</NavLink>
           <a href={`${SITE}/crm`}>CRM</a>
           <a href={`${SITE}/accent-sidebar/portfolio`}>Portfolio</a>
           <a href={SITE}>Website</a>

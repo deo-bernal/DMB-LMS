@@ -209,5 +209,18 @@ public class AdminUserDto
     public string Email { get; set; } = string.Empty;
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
+    public string? ContactNo { get; set; }
     public string Role { get; set; } = string.Empty;
+    public bool Activated { get; set; }
+    public bool IsSuperAdmin { get; set; }
+}
+
+public class UpdateAdminUserDto
+{
+    public required string FirstName { get; set; }
+    public required string LastName { get; set; }
+    public required string Email { get; set; }
+    public string? ContactNo { get; set; }
+    public required string Role { get; set; }
+    public bool Activated { get; set; }
 }

@@ -3,7 +3,7 @@ const logoSrc = `${process.env.PUBLIC_URL || ""}/dmb-web-solutions-logo.png`;
 export default function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
     <span className="brand">
-      <img src={logoSrc} alt="DMB Web Solutions" />
+      <img src={logoSrc} alt="DMB Web Solutions" width={48} height={48} />
       <span className="brand-name">
         DMB Web Solutions
         {compact ? null : <span className="brand-sub">Learning Management System (LMS)</span>}

@@ -27,7 +27,8 @@ public class AuthController : ControllerBase
                 token = result.AccessToken,
                 locations = result.Locations,
                 currentLocationId = result.CurrentLocationId,
-                firstName = result.FirstName
+                firstName = result.FirstName,
+                isSuperAdmin = result.IsSuperAdmin
             }),
             _ => Unauthorized()
         };
@@ -40,7 +41,38 @@ public class AuthController : ControllerBase
         if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
             return Unauthorized();
         var user = await _authService.GetLoggedInUserAsync(userId, cancellationToken);
-        return user is null ? Unauthorized() : Ok(new { firstName = user.FirstName, lastName = user.LastName, email = user.Email });
+        return user is null ? Unauthorized() : Ok(new
+        {
+            userId = user.UserId,
+            firstName = user.FirstName,
+            lastName = user.LastName,
+            email = user.Email,
+            contactNo = user.ContactNo,
+            isSuperAdmin = user.IsSuperAdmin
+        });
+    }
+
+    [HttpPut("me")]
+    [Authorize]
+    public async Task<IActionResult> UpdateMe([FromBody] UpdateOwnProfileDto dto, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized();
+        var (user, error) = await _authService.UpdateOwnProfileAsync(userId, dto, cancellationToken);
+        if (error is not null)
+        {
+            return BadRequest(new { message = error });
+        }
+
+        return Ok(new
+        {
+            userId = user!.UserId,
+            firstName = user.FirstName,
+            lastName = user.LastName,
+            email = user.Email,
+            contactNo = user.ContactNo,
+            isSuperAdmin = user.IsSuperAdmin
+        });
     }
 
     [HttpPost("logout")]

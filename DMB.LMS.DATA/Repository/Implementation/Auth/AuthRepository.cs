@@ -6,6 +6,7 @@ using AutoMapper;
 using Dmb.Lms.Data.Context;
 using Dmb.Lms.Data.Entities;
 using Dmb.Lms.Data.Repository.Interface.Auth;
+using Dmb.Lms.Model;
 using Dmb.Lms.Model.Dtos.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -57,7 +58,8 @@ public class AuthRepository : IAuthRepository
             AccessToken = CreateAccessToken(_mapper.Map<LoggedInUserDto>(user)),
             Locations = locations,
             CurrentLocationId = locations.FirstOrDefault()?.LocationId,
-            FirstName = user.FirstName
+            FirstName = user.FirstName,
+            IsSuperAdmin = user.IsSuperAdmin
         };
     }
 
@@ -65,6 +67,53 @@ public class AuthRepository : IAuthRepository
     {
         var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
         return user is null ? null : _mapper.Map<LoggedInUserDto>(user);
+    }
+
+    public async Task<(LoggedInUserDto? User, string? Error)> UpdateOwnProfileAsync(Guid userId, UpdateOwnProfileDto dto, CancellationToken cancellationToken = default)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return (null, "Account not found.");
+        }
+
+        var firstName = dto.FirstName.Trim();
+        var lastName = dto.LastName.Trim();
+        var email = dto.Email.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName) || string.IsNullOrWhiteSpace(email))
+        {
+            return (null, "First name, last name, and email are required.");
+        }
+
+        var emailTaken = await _db.Users.AnyAsync(
+            u => u.Id != userId && (u.Email.ToLower() == email || u.Username.ToLower() == email),
+            cancellationToken);
+        if (emailTaken)
+        {
+            return (null, "That email is already in use.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.NewPassword))
+        {
+            if (string.IsNullOrWhiteSpace(dto.CurrentPassword) ||
+                !VerifyPassword(dto.CurrentPassword, user.PasswordSalt, user.PasswordHash))
+            {
+                return (null, "Current password is incorrect.");
+            }
+
+            var (hash, salt) = CreatePasswordHash(dto.NewPassword);
+            user.PasswordHash = hash;
+            user.PasswordSalt = salt;
+        }
+
+        user.FirstName = firstName;
+        user.LastName = lastName;
+        user.Email = email;
+        user.Username = email;
+        user.ContactNo = string.IsNullOrWhiteSpace(dto.ContactNo) ? null : dto.ContactNo.Trim();
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        await _db.SaveChangesAsync(cancellationToken);
+        return (_mapper.Map<LoggedInUserDto>(user), null);
     }
 
     public async Task<LogoutWorkflowResult> LogoutAsync(
@@ -119,6 +168,20 @@ public class AuthRepository : IAuthRepository
 
     public async Task<IReadOnlyList<LocationMembershipDto>> GetUserLocationsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
+        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user?.IsSuperAdmin == true)
+        {
+            return await _db.Locations.AsNoTracking()
+                .Where(l => l.AgencyId == user.AgencyId && l.IsActive)
+                .Select(l => new LocationMembershipDto
+                {
+                    LocationId = l.Id,
+                    Name = l.Name,
+                    Role = Roles.Owner
+                })
+                .ToListAsync(cancellationToken);
+        }
+
         return await _db.UserLocations.AsNoTracking()
             .Where(ul => ul.UserId == userId && ul.Location.IsActive)
             .Select(ul => new LocationMembershipDto
@@ -154,7 +217,8 @@ public class AuthRepository : IAuthRepository
             AccessToken = CreateAccessToken(_mapper.Map<LoggedInUserDto>(user)),
             Locations = locations,
             CurrentLocationId = locations.FirstOrDefault()?.LocationId,
-            FirstName = user.FirstName
+            FirstName = user.FirstName,
+            IsSuperAdmin = user.IsSuperAdmin
         };
     }
 
@@ -181,7 +245,8 @@ public class AuthRepository : IAuthRepository
             new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim(ClaimTypes.GivenName, user.FirstName ?? string.Empty),
-            new Claim("agencyId", user.AgencyId.ToString())
+            new Claim("agencyId", user.AgencyId.ToString()),
+            new Claim("isSuperAdmin", user.IsSuperAdmin ? "true" : "false")
         };
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
         var token = new JwtSecurityToken(

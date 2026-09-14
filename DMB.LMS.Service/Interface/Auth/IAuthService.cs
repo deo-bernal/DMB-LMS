@@ -10,6 +10,7 @@ public interface IAuthService
     Task<PasswordResetCompletionStatus> CompletePasswordResetAsync(ResetPasswordDto request, CancellationToken cancellationToken = default);
     Task<bool> IsJtiRevokedAsync(string jti, CancellationToken cancellationToken = default);
     Task<LoggedInUserDto?> GetLoggedInUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<(LoggedInUserDto? User, string? Error)> UpdateOwnProfileAsync(Guid userId, UpdateOwnProfileDto dto, CancellationToken cancellationToken = default);
 }
 
 public interface IRegistrationService

@@ -48,6 +48,7 @@ public class AuthTokenLoginResult
     public IReadOnlyList<LocationMembershipDto> Locations { get; set; } = [];
     public Guid? CurrentLocationId { get; set; }
     public string? FirstName { get; set; }
+    public bool IsSuperAdmin { get; set; }
 }
 
 public class LogoutWorkflowResult
@@ -71,8 +72,19 @@ public class LoggedInUserDto
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string? ContactNo { get; set; }
     public bool Activated { get; set; }
     public bool IsSuperAdmin { get; set; }
+}
+
+public class UpdateOwnProfileDto
+{
+    public required string FirstName { get; set; }
+    public required string LastName { get; set; }
+    public required string Email { get; set; }
+    public string? ContactNo { get; set; }
+    public string? CurrentPassword { get; set; }
+    public string? NewPassword { get; set; }
 }
 
 public class ExternalAuthCompleteRequest

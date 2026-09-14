@@ -194,9 +194,40 @@ public class WorkspaceController : ControllerBase
     [HttpGet("api/admin/users")]
     public async Task<IActionResult> Users(CancellationToken ct)
     {
-        var (_, locationId, role) = HttpContext.RequireContext();
+        var (userId, locationId, role) = HttpContext.RequireContext();
         if (role is not ("owner" or "admin")) return Forbid();
         return Ok(await _lms.ListUsersAsync(locationId, ct));
+    }
+
+    [HttpPut("api/admin/users/{id:guid}")]
+    public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateAdminUserDto dto, CancellationToken ct)
+    {
+        var (userId, locationId, role) = HttpContext.RequireContext();
+        if (role is not ("owner" or "admin")) return Forbid();
+        try
+        {
+            var updated = await _lms.UpdateUserAsync(locationId, userId, id, dto, ct);
+            return updated is null ? NotFound() : Ok(updated);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("api/admin/users/{id:guid}")]
+    public async Task<IActionResult> DeleteUser(Guid id, CancellationToken ct)
+    {
+        var (userId, locationId, role) = HttpContext.RequireContext();
+        if (role is not ("owner" or "admin")) return Forbid();
+        var error = await _lms.DeleteUserAsync(locationId, userId, id, ct);
+        if (error is null) return Ok(new { message = "User deleted.", deleted = true });
+        if (error.Contains("deactivated", StringComparison.OrdinalIgnoreCase))
+        {
+            return Ok(new { message = error, deactivated = true });
+        }
+
+        return BadRequest(new { message = error });
     }
 
     [HttpPost("api/files")]
