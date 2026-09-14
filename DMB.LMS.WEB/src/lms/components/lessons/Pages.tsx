@@ -170,7 +170,7 @@ export function AssignmentsPage() {
           <h2>Submit work</h2>
           <select value={submit.assignmentId} onChange={(e) => setSubmit({ ...submit, assignmentId: e.target.value })}>
             <option value="">Assignment</option>
-            {[...new Map(rows.map((r) => [r.id, r])).values()].map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}
+            {Array.from(new Map(rows.map((r) => [r.id, r])).values()).map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}
           </select>
           <select value={submit.studentId} onChange={(e) => setSubmit({ ...submit, studentId: e.target.value })}>{students.map((s) => <option key={s.id} value={s.id}>{s.firstName}</option>)}</select>
           <textarea value={submit.bodyText} onChange={(e) => setSubmit({ ...submit, bodyText: e.target.value })} placeholder="Answer or notes" />
