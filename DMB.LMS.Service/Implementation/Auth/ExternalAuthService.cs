@@ -596,51 +596,28 @@ public class ExternalAuthService : IExternalAuthService
     private async Task<OAuthProfile> ExchangeFacebookAsync(
         string code, string callbackUrl, string clientId, string clientSecret, CancellationToken cancellationToken)
     {
-        var redirectUris = new[]
+        // Match dmbportfolio-api: Facebook accepts this GET exchange. POST form exchange
+        // returns "Error validating client secret" for the same app credentials.
+        var tokenUrl =
+            "https://graph.facebook.com/v21.0/oauth/access_token"
+            + "?client_id=" + Uri.EscapeDataString(clientId)
+            + "&redirect_uri=" + Uri.EscapeDataString(callbackUrl)
+            + "&client_secret=" + Uri.EscapeDataString(clientSecret)
+            + "&code=" + Uri.EscapeDataString(code);
+
+        using var tokenResponse = await _httpClient.GetAsync(tokenUrl, cancellationToken);
+        var tokenBody = await tokenResponse.Content.ReadAsStringAsync(cancellationToken);
+        if (!tokenResponse.IsSuccessStatusCode)
         {
-            callbackUrl,
-            "https://www.dmbwebsolutions.com/api/auth/external/facebook/callback",
-            "https://www.dmbwebsolutions.com/lms/api/auth/external/facebook/callback"
-        }.Distinct(StringComparer.Ordinal).ToArray();
-
-        OAuthTokenResponse? token = null;
-        string? lastError = null;
-        foreach (var redirectUri in redirectUris)
-        {
-            using var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "https://graph.facebook.com/v21.0/oauth/access_token")
-            {
-                Content = new FormUrlEncodedContent(new Dictionary<string, string>
-                {
-                    ["client_id"] = clientId,
-                    ["client_secret"] = clientSecret,
-                    ["redirect_uri"] = redirectUri,
-                    ["code"] = code
-                })
-            };
-            using var tokenResponse = await _httpClient.SendAsync(tokenRequest, cancellationToken);
-            var tokenBody = await tokenResponse.Content.ReadAsStringAsync(cancellationToken);
-            if (tokenResponse.IsSuccessStatusCode)
-            {
-                token = JsonSerializer.Deserialize<OAuthTokenResponse>(tokenBody);
-                break;
-            }
-
-            lastError = ParseFacebookError(tokenBody) ?? $"Facebook token exchange failed ({(int)tokenResponse.StatusCode}).";
-            if (LooksLikeInvalidClient(lastError))
-            {
-                throw new InvalidOperationException(
-                    "Facebook: The Facebook App Secret on this API does not match this app. Copy Authentication__Facebook__ClientSecret from dmbportfolio-api onto this service.");
-            }
-
-            if (!LooksLikeRedirectMismatch(lastError))
-            {
-                throw new InvalidOperationException("Facebook: " + lastError);
-            }
+            throw new InvalidOperationException(
+                "Facebook: " + (ParseFacebookError(tokenBody) ?? $"Facebook token exchange failed ({(int)tokenResponse.StatusCode})."));
         }
 
-        if (token is null || string.IsNullOrWhiteSpace(token.AccessToken))
+        var token = JsonSerializer.Deserialize<OAuthTokenResponse>(tokenBody)
+            ?? throw new InvalidOperationException("Facebook token response was empty.");
+        if (string.IsNullOrWhiteSpace(token.AccessToken))
         {
-            throw new InvalidOperationException("Facebook: " + (lastError ?? "Facebook token response was empty."));
+            throw new InvalidOperationException("Facebook: Facebook token response was empty.");
         }
 
         var profileUrl =
@@ -669,15 +646,21 @@ public class ExternalAuthService : IExternalAuthService
 
     private bool TryGetClientId(string provider, out string clientId)
     {
-        clientId = (ProviderSection(provider, "ClientId") ?? "").Trim();
+        clientId = CleanSecret(ProviderSection(provider, "ClientId"));
         return clientId.Length > 0;
     }
 
     private bool TryGetProviderConfig(string provider, out string clientId, out string clientSecret)
     {
-        clientId = (ProviderSection(provider, "ClientId") ?? "").Trim();
-        clientSecret = (ProviderSection(provider, "ClientSecret") ?? "").Trim();
+        clientId = CleanSecret(ProviderSection(provider, "ClientId"));
+        clientSecret = CleanSecret(ProviderSection(provider, "ClientSecret"));
         return clientId.Length > 0 && clientSecret.Length > 0;
+    }
+
+    private static string CleanSecret(string? value)
+    {
+        var trimmed = (value ?? "").Trim().Trim('"').Trim('\'');
+        return trimmed;
     }
 
     private string? ProviderSection(string provider, string key)
