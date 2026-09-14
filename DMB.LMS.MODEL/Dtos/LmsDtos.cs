@@ -213,6 +213,8 @@ public class AdminUserDto
     public string Role { get; set; } = string.Empty;
     public bool Activated { get; set; }
     public bool IsSuperAdmin { get; set; }
+    public bool PasswordSet { get; set; } = true;
+    public IReadOnlyList<string> LinkedProviders { get; set; } = [];
 }
 
 public class UpdateAdminUserDto

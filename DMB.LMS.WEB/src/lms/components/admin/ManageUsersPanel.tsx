@@ -34,9 +34,8 @@ function providerLabel(provider: string) {
 
 function signInSummary(user: AdminUser) {
   const apps = (user.linkedProviders ?? []).map(providerLabel).filter(Boolean);
-  if (apps.length === 0 && user.passwordSet == null) return null;
   const methods = user.passwordSet === false ? [...apps] : ["Email and password", ...apps];
-  return methods.length > 0 ? methods.join(" · ") : "Email and password";
+  return methods.join(" · ");
 }
 
 function toDraft(user: AdminUser, fallbackRole: string): Draft {
@@ -203,7 +202,7 @@ export default function ManageUsersPanel({ roles = DEFAULT_ROLES }: { roles?: { 
                     {user.contactNo ? ` · ${user.contactNo}` : ""}
                     {user.isSuperAdmin ? " · super admin" : ` · ${user.role}`}
                     {user.activated ? "" : " · not activated"}
-                    {summary ? ` · ${summary}` : ""}
+                    {` · ${summary}`}
                   </div>
                 </div>
                 <div className="user-actions">
@@ -265,12 +264,10 @@ export default function ManageUsersPanel({ roles = DEFAULT_ROLES }: { roles?: { 
               <label>Phone</label>
               <input value={draft.contactNo} onChange={(event) => setDraft({ ...draft, contactNo: event.target.value })} />
             </div>
-            {signInSummary(editingUser) ? (
-              <div className="field">
-                <label>Sign-in methods</label>
-                <p className="muted" style={{ margin: 0 }}>{signInSummary(editingUser)}</p>
-              </div>
-            ) : null}
+            <div className="field">
+              <label>Sign-in methods</label>
+              <p className="muted" style={{ margin: 0 }}>{signInSummary(editingUser)}</p>
+            </div>
             <div className="field">
               <label>Role</label>
               <select value={draft.role} onChange={(event) => setDraft({ ...draft, role: event.target.value })}>
