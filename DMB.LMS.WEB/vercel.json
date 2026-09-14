@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/lms/static/:path*", "destination": "/static/:path*" },
+    { "source": "/lms/dmb-web-solutions-logo.png", "destination": "/dmb-web-solutions-logo.png" },
+    { "source": "/lms", "destination": "/index.html" },
+    { "source": "/lms/:path*", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

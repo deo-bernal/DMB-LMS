@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+.idea/
+node_modules/
+build/
+dist/
+*.user
+*.suo
+.env
+.env.local
+.appsettings.Local.json
+DMB.LMS.API/appsettings.Development.json
