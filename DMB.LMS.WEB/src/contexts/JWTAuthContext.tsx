@@ -13,6 +13,7 @@ type AuthContextValue = {
   currentRole: string;
   setLocationId: (id: string) => void;
   login: (username: string, password: string) => Promise<void>;
+  acceptSession: (token: string, locations?: LocationMembership[], currentLocationId?: string, firstName?: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -47,6 +48,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (name) localStorage.setItem("lms_firstName", name);
   }, [persistLocations]);
 
+  const acceptSession = useCallback(async (
+    nextToken: string,
+    nextLocations?: LocationMembership[],
+    currentLocationId?: string,
+    name?: string
+  ) => {
+    localStorage.setItem("lms_token", nextToken);
+    setToken(nextToken);
+    const resolved = name || firstNameFromToken(nextToken);
+    setFirstName(resolved);
+    if (resolved) localStorage.setItem("lms_firstName", resolved);
+
+    if (nextLocations && nextLocations.length > 0) {
+      persistLocations(nextLocations, currentLocationId);
+    } else {
+      try {
+        const res = await http.get<LocationMembership[]>("/location/list");
+        persistLocations(res.data ?? [], currentLocationId);
+      } catch {
+        persistLocations([], currentLocationId);
+      }
+    }
+
+    if (!name) {
+      try {
+        const res = await http.get<{ firstName?: string }>("/auth/me");
+        const fromMe = res.data.firstName || resolved;
+        setFirstName(fromMe);
+        if (fromMe) localStorage.setItem("lms_firstName", fromMe);
+      } catch {
+        // token is enough to enter the app
+      }
+    }
+  }, [persistLocations]);
+
   const logout = useCallback(async () => {
     try { if (localStorage.getItem("lms_token")) await http.post("/auth/logout"); } catch { /* ignore */ }
     localStorage.removeItem("lms_token");
@@ -70,8 +106,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({
     token, isAuthenticated: Boolean(token), firstName, locations, locationId, currentRole,
     setLocationId: (id: string) => { setLocationIdState(id); localStorage.setItem("lms_locationId", id); },
-    login, logout,
-  }), [token, firstName, locations, locationId, currentRole, login, logout]);
+    login, acceptSession, logout,
+  }), [token, firstName, locations, locationId, currentRole, login, acceptSession, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

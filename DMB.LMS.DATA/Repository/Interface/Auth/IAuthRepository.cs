@@ -10,6 +10,7 @@ public interface IAuthRepository
     Task<bool> IsJtiRevokedAsync(string jti, CancellationToken cancellationToken = default);
     (string PasswordHash, string PasswordSalt) CreatePasswordHash(string password);
     Task<IReadOnlyList<LocationMembershipDto>> GetUserLocationsAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<AuthTokenLoginResult> IssueJwtForUserAsync(Guid userId, CancellationToken cancellationToken = default);
 }
 
 public interface IRegistrationRepository

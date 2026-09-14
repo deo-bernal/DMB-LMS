@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Dmb.Lms.Service.Implementation.Email;
 
-public class EmailService : IActivationEmailSender, IPasswordResetEmailSender
+public class EmailService : IActivationEmailSender, IPasswordResetEmailSender, IExternalLoginEmailSender
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
@@ -31,6 +31,15 @@ public class EmailService : IActivationEmailSender, IPasswordResetEmailSender
 <p>Click the link below to choose a new password. It expires in one hour.</p>
 <p><a href=""{WebUtility.HtmlEncode(resetLink)}"">Reset password</a></p>";
         return SendAsync(toEmail, "Password reset request", html, cancellationToken);
+    }
+
+    public Task SendExternalLoginCodeEmailAsync(string toEmail, string code, CancellationToken cancellationToken = default)
+    {
+        var html = $@"<h2>Your DMB LMS sign-in code</h2>
+<p>Use this 6-digit code to finish signing in:</p>
+<p style=""font-size:1.4rem;letter-spacing:0.12em;font-weight:700"">{WebUtility.HtmlEncode(code)}</p>
+<p>It expires in 15 minutes. If you did not try to sign in, ignore this email.</p>";
+        return SendAsync(toEmail, "Your DMB LMS sign-in code", html, cancellationToken);
     }
 
     private async Task SendAsync(string toEmail, string subject, string html, CancellationToken cancellationToken)

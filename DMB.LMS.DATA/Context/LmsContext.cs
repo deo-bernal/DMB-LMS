@@ -16,6 +16,8 @@ public class LmsContext : DbContext
     public DbSet<AccountActivationToken> AccountActivationTokens => Set<AccountActivationToken>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<RevokedToken> RevokedTokens => Set<RevokedToken>();
+    public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
+    public DbSet<PendingExternalLogin> PendingExternalLogins => Set<PendingExternalLogin>();
     public DbSet<Student> Students => Set<Student>();
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<TutorProfile> TutorProfiles => Set<TutorProfile>();
@@ -126,6 +128,41 @@ public class LmsContext : DbContext
             e.Property(x => x.UserId).HasColumnName("user_id");
             e.Property(x => x.ExpiresAt).HasColumnName("expires_at");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<ExternalLogin>(e =>
+        {
+            e.ToTable("lms_external_logins");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.Provider).HasColumnName("provider");
+            e.Property(x => x.ProviderUserId).HasColumnName("provider_user_id");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId);
+            e.HasIndex(x => new { x.Provider, x.ProviderUserId }).IsUnique();
+            e.HasIndex(x => new { x.UserId, x.Provider }).IsUnique();
+        });
+
+        modelBuilder.Entity<PendingExternalLogin>(e =>
+        {
+            e.ToTable("lms_pending_external_logins");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Ticket).HasColumnName("ticket");
+            e.Property(x => x.Provider).HasColumnName("provider");
+            e.Property(x => x.ProviderUserId).HasColumnName("provider_user_id");
+            e.Property(x => x.FirstName).HasColumnName("first_name");
+            e.Property(x => x.LastName).HasColumnName("last_name");
+            e.Property(x => x.Email).HasColumnName("email");
+            e.Property(x => x.Phone).HasColumnName("phone");
+            e.Property(x => x.Client).HasColumnName("client");
+            e.Property(x => x.ReturnPath).HasColumnName("return_path");
+            e.Property(x => x.CodeHash).HasColumnName("code_hash");
+            e.Property(x => x.CodeExpiresAt).HasColumnName("code_expires_at");
+            e.Property(x => x.ExpiresAt).HasColumnName("expires_at");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.HasIndex(x => x.Ticket).IsUnique();
         });
 
         modelBuilder.Entity<Student>(e =>

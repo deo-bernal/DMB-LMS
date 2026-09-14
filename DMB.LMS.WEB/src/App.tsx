@@ -8,6 +8,8 @@ import Register from "./lms/components/auth/Register";
 import ForgotPassword from "./lms/components/auth/ForgotPassword";
 import ResetPassword from "./lms/components/auth/ResetPassword";
 import Activate from "./lms/components/auth/Activate";
+import AuthCallback from "./lms/components/auth/AuthCallback";
+import AuthComplete from "./lms/components/auth/AuthComplete";
 import Dashboard from "./lms/components/dashboard/Dashboard";
 import StudentList from "./lms/components/students/List";
 import FindTutors from "./lms/components/tutors/Find";
@@ -25,6 +27,8 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/activate" element={<Activate />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/auth/complete" element={<AuthComplete />} />
           <Route path="/" element={<ProtectedRoute><Shell /></ProtectedRoute>}>
             <Route index element={<Dashboard />} />
             <Route path="children" element={<StudentList />} />

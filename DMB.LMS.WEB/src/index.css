@@ -152,6 +152,50 @@ button.password-toggle:focus-visible {
   color: var(--navy);
 }
 button.password-toggle:disabled { opacity: 0.5; cursor: default; }
+.sso-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 1.05rem 0 0.35rem;
+}
+a.sso-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.68rem 0.85rem;
+  border: 1px solid rgba(11, 31, 58, 0.18);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+a.sso-button:hover {
+  background: rgba(11, 31, 58, 0.04);
+  color: var(--navy);
+  border-color: rgba(11, 31, 58, 0.32);
+}
+.sso-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.15rem 0 0.55rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.sso-divider::before,
+.sso-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { text-align: left; padding: 0.55rem 0.4rem; border-bottom: 1px solid var(--line); }
 .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--gold-soft); color: var(--navy); font-size: 0.75rem; font-weight: 700; text-transform: capitalize; }

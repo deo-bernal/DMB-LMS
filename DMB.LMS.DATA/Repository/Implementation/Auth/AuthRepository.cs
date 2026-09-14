@@ -130,6 +130,34 @@ public class AuthRepository : IAuthRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<AuthTokenLoginResult> IssueJwtForUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return new AuthTokenLoginResult { Status = AuthTokenLoginStatus.InvalidCredentials };
+        }
+
+        if (!user.Activated)
+        {
+            return new AuthTokenLoginResult
+            {
+                Status = AuthTokenLoginStatus.AccountBlocked,
+                BlockReason = "Your account is not activated yet."
+            };
+        }
+
+        var locations = await GetUserLocationsAsync(user.Id, cancellationToken);
+        return new AuthTokenLoginResult
+        {
+            Status = AuthTokenLoginStatus.Success,
+            AccessToken = CreateAccessToken(_mapper.Map<LoggedInUserDto>(user)),
+            Locations = locations,
+            CurrentLocationId = locations.FirstOrDefault()?.LocationId,
+            FirstName = user.FirstName
+        };
+    }
+
     private bool VerifyPassword(string password, string passwordSalt, string passwordHash)
     {
         var saltBytes = Convert.FromBase64String(passwordSalt);

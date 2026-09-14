@@ -90,6 +90,9 @@ builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IActivationEmailSender>(sp => sp.GetRequiredService<EmailService>());
 builder.Services.AddScoped<IPasswordResetEmailSender>(sp => sp.GetRequiredService<EmailService>());
+builder.Services.AddScoped<IExternalLoginEmailSender>(sp => sp.GetRequiredService<EmailService>());
+builder.Services.AddHttpClient<IExternalAuthService, ExternalAuthService>();
+builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
 builder.Services.AddScoped<LocationContextFilter>();
 #endregion
 
