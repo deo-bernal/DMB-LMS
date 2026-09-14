@@ -18,8 +18,10 @@ export default function AccountPage() {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     http.get<AuthProfile>("/auth/me").then((res) => {
       setForm((current) => ({
         ...current,
@@ -28,7 +30,7 @@ export default function AccountPage() {
         email: res.data.email ?? "",
         contactNo: res.data.contactNo ?? "",
       }));
-    }).catch(() => setError("Could not load your account."));
+    }).catch(() => setError("Could not load your account.")).finally(() => setLoading(false));
   }, []);
 
   const onSubmit = async (event: FormEvent) => {
@@ -66,6 +68,12 @@ export default function AccountPage() {
   return (
     <div>
       <h1>Account</h1>
+      {loading ? (
+        <div className="card page-loading" aria-busy="true" aria-live="polite">
+          <span className="loading-modal-spinner" aria-hidden />
+          <span>Loading account</span>
+        </div>
+      ) : (
       <form className="card" onSubmit={(event) => void onSubmit(event)}>
         {error ? <p className="error">{error}</p> : null}
         {saved ? <p className="muted">{saved}</p> : null}
@@ -106,6 +114,7 @@ export default function AccountPage() {
         <p className="muted">Leave password fields blank to keep your current password.</p>
         <button type="submit" disabled={busy}>{busy ? "Saving…" : "Save account"}</button>
       </form>
+      )}
     </div>
   );
 }

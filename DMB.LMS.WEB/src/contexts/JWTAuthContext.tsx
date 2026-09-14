@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     try {
-      const res = await http.get<AuthProfile>("/auth/me");
+      const res = await http.get<AuthProfile>("/auth/me", { skipLoading: true });
       persistProfile(res.data, localStorage.getItem("lms_token"));
     } catch {
       persistProfile({}, localStorage.getItem("lms_token"));

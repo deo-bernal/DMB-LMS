@@ -9,6 +9,8 @@ export function subscribeLoading(listener: Listener) {
   listener(pending);
   return () => { listeners.delete(listener); };
 }
-export function tracksPageLoading(url?: string) {
-  return !/\/auth\/(login|logout|external|me)\b/i.test(String(url ?? ""));
+
+export function tracksPageLoading(url?: string, skipLoading?: boolean) {
+  if (skipLoading) return false;
+  return !/\/auth\/(login|logout|external)\b/i.test(String(url ?? ""));
 }
