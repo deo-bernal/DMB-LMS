@@ -147,9 +147,11 @@ public class ExternalAuthService : IExternalAuthService
         {
             _logger.LogWarning(ex, "OAuth token exchange failed for {Provider}.", normalized);
             var detail = (ex.Message ?? "").Trim();
-            if (detail.StartsWith("Facebook:", StringComparison.OrdinalIgnoreCase))
+            if (detail.StartsWith("Facebook:", StringComparison.OrdinalIgnoreCase)
+                || detail.StartsWith("LinkedIn:", StringComparison.OrdinalIgnoreCase)
+                || detail.StartsWith("Google:", StringComparison.OrdinalIgnoreCase))
             {
-                return ErrorRedirect(returnPath, detail["Facebook:".Length..].Trim());
+                return ErrorRedirect(returnPath, detail);
             }
 
             return ErrorRedirect(returnPath, $"Could not complete {Title(normalized)} sign-in. Try again.");
@@ -527,20 +529,52 @@ public class ExternalAuthService : IExternalAuthService
     private async Task<OAuthProfile> ExchangeLinkedInAsync(
         string code, string callbackUrl, string clientId, string clientSecret, CancellationToken cancellationToken)
     {
-        using var tokenResponse = await _httpClient.PostAsync(
-            "https://www.linkedin.com/oauth/v2/accessToken",
-            new FormUrlEncodedContent(new Dictionary<string, string>
+        var redirectUris = new[]
+        {
+            callbackUrl,
+            "https://www.dmbwebsolutions.com/api/auth/external/linkedin/callback",
+            "https://dmbportfolio-api.onrender.com/api/auth/external/linkedin/callback"
+        }.Distinct(StringComparer.Ordinal).ToArray();
+
+        OAuthTokenResponse? token = null;
+        string? lastError = null;
+        foreach (var redirectUri in redirectUris)
+        {
+            using var tokenResponse = await _httpClient.PostAsync(
+                "https://www.linkedin.com/oauth/v2/accessToken",
+                new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["grant_type"] = "authorization_code",
+                    ["code"] = code,
+                    ["redirect_uri"] = redirectUri,
+                    ["client_id"] = clientId,
+                    ["client_secret"] = clientSecret
+                }),
+                cancellationToken);
+            var tokenBody = await tokenResponse.Content.ReadAsStringAsync(cancellationToken);
+            if (tokenResponse.IsSuccessStatusCode)
             {
-                ["grant_type"] = "authorization_code",
-                ["code"] = code,
-                ["redirect_uri"] = callbackUrl,
-                ["client_id"] = clientId,
-                ["client_secret"] = clientSecret
-            }),
-            cancellationToken);
-        tokenResponse.EnsureSuccessStatusCode();
-        var token = await tokenResponse.Content.ReadFromJsonAsync<OAuthTokenResponse>(cancellationToken: cancellationToken)
-            ?? throw new InvalidOperationException("LinkedIn token response was empty.");
+                token = JsonSerializer.Deserialize<OAuthTokenResponse>(tokenBody);
+                break;
+            }
+
+            lastError = ParseOAuthError(tokenBody) ?? $"LinkedIn token exchange failed ({(int)tokenResponse.StatusCode}).";
+            if (LooksLikeInvalidClient(lastError))
+            {
+                throw new InvalidOperationException(
+                    "LinkedIn: The LinkedIn Client Secret on this API does not match this app. Copy Authentication__LinkedIn__ClientSecret from dmbportfolio-api onto this service.");
+            }
+
+            if (!LooksLikeRedirectMismatch(lastError) && !LooksLikeInvalidGrant(lastError))
+            {
+                throw new InvalidOperationException("LinkedIn: " + lastError);
+            }
+        }
+
+        if (token is null || string.IsNullOrWhiteSpace(token.AccessToken))
+        {
+            throw new InvalidOperationException("LinkedIn: " + (lastError ?? "LinkedIn token response was empty."));
+        }
 
         using var userRequest = new HttpRequestMessage(HttpMethod.Get, "https://api.linkedin.com/v2/userinfo");
         userRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
@@ -592,6 +626,12 @@ public class ExternalAuthService : IExternalAuthService
             }
 
             lastError = ParseFacebookError(tokenBody) ?? $"Facebook token exchange failed ({(int)tokenResponse.StatusCode}).";
+            if (LooksLikeInvalidClient(lastError))
+            {
+                throw new InvalidOperationException(
+                    "Facebook: The Facebook App Secret on this API does not match this app. Copy Authentication__Facebook__ClientSecret from dmbportfolio-api onto this service.");
+            }
+
             if (!LooksLikeRedirectMismatch(lastError))
             {
                 throw new InvalidOperationException("Facebook: " + lastError);
@@ -764,6 +804,48 @@ public class ExternalAuthService : IExternalAuthService
 
     private static bool LooksLikeRedirectMismatch(string message) =>
         message.Contains("redirect_uri", StringComparison.OrdinalIgnoreCase);
+
+    private static bool LooksLikeInvalidGrant(string message) =>
+        message.Contains("invalid_grant", StringComparison.OrdinalIgnoreCase)
+        || message.Contains("authorization code", StringComparison.OrdinalIgnoreCase);
+
+    private static bool LooksLikeInvalidClient(string message) =>
+        message.Contains("invalid_client", StringComparison.OrdinalIgnoreCase)
+        || message.Contains("client secret", StringComparison.OrdinalIgnoreCase)
+        || message.Contains("client_secret", StringComparison.OrdinalIgnoreCase);
+
+    private static string? ParseOAuthError(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("error_description", out var description))
+            {
+                var text = description.GetString();
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    return text.Length > 220 ? text[..220] : text;
+                }
+            }
+
+            if (doc.RootElement.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.String)
+            {
+                return error.GetString();
+            }
+        }
+        catch (JsonException)
+        {
+            // Fall through to a short raw snippet.
+        }
+
+        var trimmed = body.Trim();
+        return trimmed.Length > 180 ? trimmed[..180] : trimmed;
+    }
 
     private static string? ParseFacebookError(string body)
     {

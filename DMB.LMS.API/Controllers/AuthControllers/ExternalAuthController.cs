@@ -87,13 +87,9 @@ public class ExternalAuthController : ControllerBase
     private static string BuildCallbackUrl(string provider)
     {
         var providerKey = provider.Trim().ToLowerInvariant();
-        // Must match the URIs already registered on the shared OAuth apps.
-        // State is prefixed "lms." so the marketing callback can hand the code to dmb-lms-api.
-        if (providerKey == "facebook")
-        {
-            return "https://www.dmbwebsolutions.com/api/auth/external/facebook/callback";
-        }
-
-        return $"https://dmbportfolio-api.onrender.com/api/auth/external/{providerKey}/callback";
+        // Shared OAuth apps must list this public www URI. Chrome Safe Browsing flags
+        // *.onrender.com when LinkedIn/Google bounce back with ?code= in the query.
+        // State is prefixed "lms." so the marketing callback can hand the code to LMS.
+        return $"https://www.dmbwebsolutions.com/api/auth/external/{providerKey}/callback";
     }
 }
