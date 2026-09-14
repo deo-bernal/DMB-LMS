@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import http from "../../services/http.service";
-import BrandMark from "../layout/BrandMark";
+import AuthLayout from "./AuthLayout";
 
 export default function Activate() {
   const [params] = useSearchParams();
@@ -17,14 +17,14 @@ export default function Activate() {
     }
   };
   return (
-    <div className="auth-page">
+    <AuthLayout>
       <form className="card" onSubmit={onSubmit}>
-        <BrandMark /><h1>Activate account</h1>
+        <h1>Activate account</h1>
         {message ? <p>{message}</p> : null}
         {error ? <p className="error">{error}</p> : null}
         <button type="submit">Activate</button>
         <div className="auth-links"><Link to="/login">Back to sign in</Link></div>
       </form>
-    </div>
+    </AuthLayout>
   );
 }

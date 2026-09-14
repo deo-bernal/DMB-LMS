@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../contexts/JWTAuthContext";
-import BrandMark from "../layout/BrandMark";
+import AuthLayout from "./AuthLayout";
 import PasswordField from "./PasswordField";
 
 export default function Login() {
@@ -26,9 +26,8 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-page">
+    <AuthLayout>
       <form className="card" onSubmit={onSubmit}>
-        <BrandMark />
         <h1>Sign in</h1>
         <p className="muted">Parent, tutor, or admin workspace.</p>
         {error ? <p className="error">{error}</p> : null}
@@ -40,6 +39,6 @@ export default function Login() {
           <Link to="/forgot-password">Forgot password?</Link>
         </div>
       </form>
-    </div>
+    </AuthLayout>
   );
 }

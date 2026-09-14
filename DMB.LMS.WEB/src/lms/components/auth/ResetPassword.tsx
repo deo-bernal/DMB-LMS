@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import http from "../../services/http.service";
-import BrandMark from "../layout/BrandMark";
+import AuthLayout from "./AuthLayout";
 import PasswordField from "./PasswordField";
 
 export default function ResetPassword() {
@@ -20,9 +20,9 @@ export default function ResetPassword() {
     }
   };
   return (
-    <div className="auth-page">
+    <AuthLayout>
       <form className="card" onSubmit={onSubmit}>
-        <BrandMark /><h1>Reset password</h1>
+        <h1>Reset password</h1>
         {message ? <p>{message}</p> : null}
         {error ? <p className="error">{error}</p> : null}
         <PasswordField label="New password" value={password} onChange={setPassword} autoComplete="new-password" />
@@ -30,6 +30,6 @@ export default function ResetPassword() {
         <button type="submit">Save password</button>
         <div className="auth-links"><Link to="/login">Back to sign in</Link></div>
       </form>
-    </div>
+    </AuthLayout>
   );
 }

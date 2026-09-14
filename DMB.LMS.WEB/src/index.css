@@ -70,9 +70,40 @@ button:disabled { opacity: 0.7; cursor: wait; }
   box-shadow: var(--shadow);
   padding: 1.2rem 1.3rem;
 }
-.auth-page { min-height: calc(100vh - 48px); display: grid; place-items: center; padding: 2rem 1rem; }
+.auth-page {
+  min-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 1rem 2.4rem;
+}
+.auth-hero {
+  width: 100vw;
+  margin: 0 -1rem 1.4rem;
+  background: var(--navy);
+  color: #fff;
+  padding: 1.15rem 1.4rem 1.25rem;
+  display: flex;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(11, 31, 58, 0.18);
+}
+.auth-hero .brand-name { color: #fff; }
+.auth-hero .brand-sub { color: var(--gold); max-width: none; }
+.auth-hero .brand img { width: 48px; height: 48px; }
 .auth-page .card { width: min(420px, 100%); }
-.auth-links { display: flex; justify-content: space-between; margin-top: 0.9rem; }
+.auth-page .card > button[type="submit"] { width: 100%; }
+.auth-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.15rem;
+  margin: 1.15rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+.auth-links a { font-weight: 600; text-decoration: none; }
+.auth-links a:hover { text-decoration: underline; }
 .field { margin: 0.7rem 0; }
 .field label, .muted { color: var(--muted); font-size: 0.9rem; }
 h1 { margin: 0.4rem 0 0.8rem; color: var(--heading); font-size: 1.45rem; }
