@@ -96,7 +96,7 @@ h1 { margin: 0.4rem 0 0.8rem; color: var(--heading); font-size: 1.45rem; }
 .brand { display: flex; align-items: center; gap: 0.6rem; color: inherit; text-decoration: none; }
 .brand img { width: 36px; height: 36px; }
 .brand-name { font-weight: 700; display: flex; flex-direction: column; line-height: 1.15; }
-.brand-sub { font-size: 0.75rem; color: var(--gold); font-weight: 600; }
+.brand-sub { font-size: 0.75rem; color: var(--gold); font-weight: 600; max-width: 14rem; line-height: 1.25; }
 .site-footer { text-align: center; padding: 0.8rem; color: var(--muted); font-size: 0.85rem; }
 .password-field { display: flex; gap: 0.4rem; }
 .password-toggle { background: transparent; color: var(--navy); padding: 0 0.4rem; }
