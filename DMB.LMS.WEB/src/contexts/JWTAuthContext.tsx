@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import type { AxiosRequestConfig } from "axios";
 import http from "../lms/services/http.service";
 import type { AuthProfile, LocationMembership, LoginResponse } from "../lms/models";
 import { firstNameFromToken, isSuperAdminFromToken, userIdFromToken } from "../lms/utils/sessionUser";
@@ -68,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     try {
-      const res = await http.get<AuthProfile>("/auth/me", { skipLoading: true });
+      const res = await http.get<AuthProfile>("/auth/me", { skipLoading: true } as AxiosRequestConfig);
       persistProfile(res.data, localStorage.getItem("lms_token"));
     } catch {
       persistProfile({}, localStorage.getItem("lms_token"));
