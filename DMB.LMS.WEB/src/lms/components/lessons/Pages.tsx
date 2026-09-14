@@ -266,7 +266,9 @@ export function AdminPage() {
   return (
     <div>
       <h1>Manage users</h1>
-      <ManageUsersPanel />
+      <div className="card">
+        <ManageUsersPanel />
+      </div>
       <div className="card" style={{ marginTop: "1rem" }}>
         <h2>Bookings</h2>
         {bookings.map((b) => <div key={b.id}>{b.studentName} · {b.tutorName} · {b.status} · {new Date(b.startsAt).toLocaleString()}</div>)}
