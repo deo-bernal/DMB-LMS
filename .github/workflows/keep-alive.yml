@@ -11,6 +11,12 @@ jobs:
     steps:
       - name: Wake Render LMS API
         run: |
-          curl -fsS -o /dev/null -w "health=%{time_total}s code=%{http_code}\n" \
+          curl -fsS -o /dev/null -w "lms health=%{time_total}s code=%{http_code}\n" \
             "https://dmb-lms-api.onrender.com/health" \
+            --max-time 60
+
+      - name: Wake Render Portfolio API (shared Google SSO callback)
+        run: |
+          curl -fsS -o /dev/null -w "portfolio health=%{time_total}s code=%{http_code}\n" \
+            "https://dmbportfolio-api.onrender.com/health" \
             --max-time 60
