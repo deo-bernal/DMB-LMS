@@ -2,7 +2,7 @@ name: Keep LMS API warm
 
 on:
   schedule:
-    - cron: "*/12 * * * *"
+    - cron: "*/8 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -13,10 +13,13 @@ jobs:
         run: |
           curl -fsS -o /dev/null -w "lms health=%{time_total}s code=%{http_code}\n" \
             "https://dmb-lms-api.onrender.com/health" \
-            --max-time 60
+            --max-time 90 || true
+          curl -fsS -o /dev/null -w "lms api/health=%{time_total}s code=%{http_code}\n" \
+            "https://dmb-lms-api.onrender.com/api/health" \
+            --max-time 90 || true
 
       - name: Wake Render Portfolio API (shared Google SSO callback)
         run: |
           curl -fsS -o /dev/null -w "portfolio health=%{time_total}s code=%{http_code}\n" \
             "https://dmbportfolio-api.onrender.com/health" \
-            --max-time 60
+            --max-time 90 || true

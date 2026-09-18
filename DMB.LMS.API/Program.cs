@@ -23,7 +23,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 #region Database
 builder.Services.AddDbContext<LmsContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("LmsDb")));
+    options.UseNpgsql(
+        EnsureNpgsqlPooling(builder.Configuration.GetConnectionString("LmsDb")),
+        npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3)));
 #endregion
 
 #region JWT
@@ -149,4 +151,21 @@ app.Use(async (context, next) =>
 app.MapControllers();
 app.MapGet("/", () => Results.Ok(new { status = "ok" }));
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
 app.Run();
+
+static string EnsureNpgsqlPooling(string? connectionString)
+{
+    if (string.IsNullOrWhiteSpace(connectionString))
+        throw new InvalidOperationException("Connection string LmsDb is not configured.");
+
+    var csb = new Npgsql.NpgsqlConnectionStringBuilder(connectionString)
+    {
+        Pooling = true,
+        MaxPoolSize = 20,
+        Timeout = 15,
+        CommandTimeout = 30,
+        Keepalive = 30
+    };
+    return csb.ConnectionString;
+}

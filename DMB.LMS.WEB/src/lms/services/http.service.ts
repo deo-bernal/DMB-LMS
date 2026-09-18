@@ -1,11 +1,11 @@
 import axios, { type AxiosRequestConfig } from "axios";
-import { lmsApiConfig } from "../../config";
+import { resolveApiBaseUrl } from "../../config";
 import { beginLoading, endLoading, tracksPageLoading } from "../utils/loadingGate";
 
 type RequestConfig = AxiosRequestConfig & { skipLoading?: boolean };
 
 const http = axios.create({
-  baseURL: lmsApiConfig.lms_api_url,
+  baseURL: resolveApiBaseUrl(),
   headers: { "Content-type": "application/json" },
 });
 
@@ -14,6 +14,7 @@ function tracked(config?: RequestConfig) {
 }
 
 http.interceptors.request.use((config) => {
+  config.baseURL = resolveApiBaseUrl();
   const token = localStorage.getItem("lms_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   const locationId = localStorage.getItem("lms_locationId");
