@@ -164,8 +164,7 @@ static string EnsureNpgsqlPooling(string? connectionString)
         Pooling = true,
         MaxPoolSize = 20,
         Timeout = 15,
-        CommandTimeout = 30,
-        Keepalive = 30
+        CommandTimeout = 30
     };
     return csb.ConnectionString;
 }
