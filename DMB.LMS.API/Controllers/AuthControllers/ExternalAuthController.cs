@@ -87,7 +87,7 @@ public class ExternalAuthController : ControllerBase
     private static string BuildCallbackUrl(string provider)
     {
         var providerKey = provider.Trim().ToLowerInvariant();
-        // Keep all social callbacks on the public site (Render free hosts can suspend).
-        return $"https://www.dmbwebsolutions.com/api/auth/external/{providerKey}/callback";
+        // Keep callbacks on the public site under each app path (not suspended *.onrender.com).
+        return $"https://www.dmbwebsolutions.com/lms/api/auth/external/{providerKey}/callback";
     }
 }
