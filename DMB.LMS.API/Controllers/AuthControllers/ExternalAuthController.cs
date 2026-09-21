@@ -87,13 +87,7 @@ public class ExternalAuthController : ControllerBase
     private static string BuildCallbackUrl(string provider)
     {
         var providerKey = provider.Trim().ToLowerInvariant();
-        // Facebook rejects *.onrender.com. LinkedIn's return to Render is blocked by Chrome.
-        // Google Cloud still lists the Render URI; www causes redirect_uri_mismatch.
-        if (providerKey is "facebook" or "linkedin")
-        {
-            return $"https://www.dmbwebsolutions.com/api/auth/external/{providerKey}/callback";
-        }
-
-        return $"https://dmbportfolio-api.onrender.com/api/auth/external/{providerKey}/callback";
+        // Keep all social callbacks on the public site (Render free hosts can suspend).
+        return $"https://www.dmbwebsolutions.com/api/auth/external/{providerKey}/callback";
     }
 }
