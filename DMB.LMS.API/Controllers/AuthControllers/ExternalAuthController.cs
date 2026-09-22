@@ -87,7 +87,12 @@ public class ExternalAuthController : ControllerBase
     private static string BuildCallbackUrl(string provider)
     {
         var providerKey = provider.Trim().ToLowerInvariant();
-        // Keep callbacks on the public site under each app path (not suspended *.onrender.com).
+        // LinkedIn/Facebook stay on the shared www /api callback (developer console).
+        // Google uses the per-app path registered in Google Cloud.
+        if (providerKey is "linkedin" or "facebook")
+        {
+            return $"https://www.dmbwebsolutions.com/api/auth/external/{providerKey}/callback";
+        }
         return $"https://www.dmbwebsolutions.com/lms/api/auth/external/{providerKey}/callback";
     }
 }
