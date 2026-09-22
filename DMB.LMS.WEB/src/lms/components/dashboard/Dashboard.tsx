@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import http from "../../services/http.service";
 import type { LocationStats, Booking, Course, Progress } from "../../models";
 import { useAuth } from "../../../contexts/JWTAuthContext";
+import TablePaginationBar from "../common/TablePaginationBar";
+import { useClientPagination } from "../common/useClientPagination";
 
 export default function Dashboard() {
   const { locationId, currentRole } = useAuth();
@@ -9,6 +11,7 @@ export default function Dashboard() {
   const [lessons, setLessons] = useState<Booking[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [progress, setProgress] = useState<Progress[]>([]);
+  const { page, setPage, rowsPerPage, setRowsPerPage, pageItems, total } = useClientPagination(progress, 10);
 
   useEffect(() => {
     if (!locationId) return;
@@ -42,12 +45,21 @@ export default function Dashboard() {
       <div className="card" style={{ marginTop: "1rem" }}>
         <h2>Progress</h2>
         {progress.length === 0 ? <p className="muted">No progress rows yet.</p> : (
-          <table className="table">
-            <thead><tr><th>Student</th><th>Course</th><th>Materials</th><th>Graded</th><th>Lessons</th></tr></thead>
-            <tbody>{progress.map((p) => (
-              <tr key={`${p.studentId}-${p.courseId}`}><td>{p.studentName}</td><td>{p.courseTitle}</td><td>{p.materialsDone}</td><td>{p.assignmentsGraded}</td><td>{p.lessonsAttended}</td></tr>
-            ))}</tbody>
-          </table>
+          <>
+            <table className="table">
+              <thead><tr><th>Student</th><th>Course</th><th>Materials</th><th>Graded</th><th>Lessons</th></tr></thead>
+              <tbody>{pageItems.map((p) => (
+                <tr key={`${p.studentId}-${p.courseId}`}><td>{p.studentName}</td><td>{p.courseTitle}</td><td>{p.materialsDone}</td><td>{p.assignmentsGraded}</td><td>{p.lessonsAttended}</td></tr>
+              ))}</tbody>
+            </table>
+            <TablePaginationBar
+              page={page}
+              rowsPerPage={rowsPerPage}
+              total={total}
+              onPageChange={setPage}
+              onRowsPerPageChange={setRowsPerPage}
+            />
+          </>
         )}
       </div>
     </div>

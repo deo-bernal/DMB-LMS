@@ -152,6 +152,19 @@ insert into lms_user_locations (user_id, location_id, role) values
   ('88888888-8888-8888-8888-888888888883', '22222222-2222-2222-2222-222222222222', 'tutor')
 on conflict (user_id, location_id) do update set role = excluded.role;
 
+-- Google SSO may create deo_bernal@yahoo.com as a parent with no demo bookings.
+-- Promote known Deo accounts to owner/super-admin so Lessons shows the full demo set.
+update lms_users
+set is_super_admin = true, updated_at = now()
+where lower(email) in ('deobernal@gmail.com', 'deo_bernal@yahoo.com');
+
+update lms_user_locations ul
+set role = 'owner'
+from lms_users u
+where u.id = ul.user_id
+  and ul.location_id = '22222222-2222-2222-2222-222222222222'
+  and lower(u.email) in ('deobernal@gmail.com', 'deo_bernal@yahoo.com');
+
 insert into lms_students (id, location_id, parent_user_id, first_name, last_name, grade_level, notes) values
   ('99999999-9999-9999-9999-999999999991', '22222222-2222-2222-2222-222222222222', '77777777-7777-7777-7777-777777777771', 'Sofia', 'Santos', 'Grade 5', 'Loves math puzzles'),
   ('99999999-9999-9999-9999-999999999992', '22222222-2222-2222-2222-222222222222', '77777777-7777-7777-7777-777777777771', 'Lucas', 'Santos', 'Grade 3', 'Building reading stamina'),
@@ -332,8 +345,8 @@ insert into lms_bookings (
   '99999999-9999-9999-9999-999999999992',
   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2',
   'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2',
-  date_trunc('week', now()) + interval '5 days' + interval '10 hours',
-  date_trunc('week', now()) + interval '5 days' + interval '11 hours',
+  now() + interval '3 days' + interval '10 hours',
+  now() + interval '3 days' + interval '11 hours',
   'accepted',
   30,
   'https://meet.google.com/dmb-lucas-eng'
@@ -350,28 +363,173 @@ insert into lms_bookings (
   'requested',
   30,
   null
+),
+-- Extra demo lessons so Lessons stays populated after seed dates age.
+(
+  '13131313-1313-1313-1313-131313131316',
+  '22222222-2222-2222-2222-222222222222',
+  '77777777-7777-7777-7777-777777777771',
+  '99999999-9999-9999-9999-999999999991',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2',
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+  now() + interval '2 days' + interval '16 hours',
+  now() + interval '2 days' + interval '17 hours',
+  'accepted',
+  30,
+  'https://meet.google.com/dmb-sofia-priya'
+),
+(
+  '13131313-1313-1313-1313-131313131317',
+  '22222222-2222-2222-2222-222222222222',
+  '77777777-7777-7777-7777-777777777772',
+  '99999999-9999-9999-9999-999999999993',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4',
+  now() + interval '5 days' + interval '14 hours',
+  now() + interval '5 days' + interval '15 hours',
+  'accepted',
+  25,
+  'https://meet.google.com/dmb-mia-cs'
+),
+(
+  '13131313-1313-1313-1313-131313131318',
+  '22222222-2222-2222-2222-222222222222',
+  '77777777-7777-7777-7777-777777777771',
+  '99999999-9999-9999-9999-999999999992',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3',
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+  now() + interval '6 days' + interval '9 hours',
+  now() + interval '6 days' + interval '10 hours',
+  'accepted',
+  15,
+  'https://meet.google.com/dmb-lucas-geo'
+),
+(
+  '13131313-1313-1313-1313-131313131319',
+  '22222222-2222-2222-2222-222222222222',
+  '77777777-7777-7777-7777-777777777772',
+  '99999999-9999-9999-9999-999999999993',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3',
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3',
+  now() + interval '8 days' + interval '11 hours',
+  now() + interval '8 days' + interval '12 hours',
+  'requested',
+  15,
+  null
+),
+(
+  '13131313-1313-1313-1313-13131313131a',
+  '22222222-2222-2222-2222-222222222222',
+  '77777777-7777-7777-7777-777777777771',
+  '99999999-9999-9999-9999-999999999991',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+  now() - interval '2 days',
+  now() - interval '2 days' + interval '60 minutes',
+  'completed',
+  25,
+  'https://meet.google.com/dmb-sofia-recent'
+),
+(
+  '13131313-1313-1313-1313-13131313131b',
+  '22222222-2222-2222-2222-222222222222',
+  '77777777-7777-7777-7777-777777777771',
+  '99999999-9999-9999-9999-999999999992',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2',
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2',
+  now() - interval '3 days',
+  now() - interval '3 days' + interval '60 minutes',
+  'completed',
+  30,
+  'https://meet.google.com/dmb-lucas-recent'
+),
+(
+  '13131313-1313-1313-1313-13131313131c',
+  '22222222-2222-2222-2222-222222222222',
+  '77777777-7777-7777-7777-777777777772',
+  '99999999-9999-9999-9999-999999999993',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+  now() + interval '10 days' + interval '15 hours',
+  now() + interval '10 days' + interval '16 hours',
+  'accepted',
+  25,
+  'https://meet.google.com/dmb-mia-math-2'
+),
+(
+  '13131313-1313-1313-1313-13131313131d',
+  '22222222-2222-2222-2222-222222222222',
+  '77777777-7777-7777-7777-777777777771',
+  '99999999-9999-9999-9999-999999999991',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3',
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3',
+  now() + interval '12 days' + interval '13 hours',
+  now() + interval '12 days' + interval '14 hours',
+  'accepted',
+  15,
+  'https://meet.google.com/dmb-sofia-geo'
 )
 on conflict (id) do update set
   status = excluded.status,
   starts_at = excluded.starts_at,
   ends_at = excluded.ends_at,
   meeting_url = excluded.meeting_url,
+  parent_user_id = excluded.parent_user_id,
+  student_id = excluded.student_id,
+  tutor_profile_id = excluded.tutor_profile_id,
+  subject_id = excluded.subject_id,
+  price = excluded.price,
   updated_at = now();
 
 insert into lms_lesson_notes (id, booking_id, author_user_id, body) values
   ('14141414-1414-1414-1414-141414141411', '13131313-1313-1313-1313-131313131311', '88888888-8888-8888-8888-888888888881', 'Worked through equivalent fractions; homework: p.12'),
-  ('14141414-1414-1414-1414-141414141412', '13131313-1313-1313-1313-131313131312', '88888888-8888-8888-8888-888888888883', 'Introduced Pythagoras; review right triangles')
+  ('14141414-1414-1414-1414-141414141412', '13131313-1313-1313-1313-131313131312', '88888888-8888-8888-8888-888888888883', 'Introduced Pythagoras; review right triangles'),
+  ('14141414-1414-1414-1414-141414141413', '13131313-1313-1313-1313-13131313131a', '88888888-8888-8888-8888-888888888881', 'Reviewed word problems; next session: mixed operations.'),
+  ('14141414-1414-1414-1414-141414141414', '13131313-1313-1313-1313-13131313131b', '88888888-8888-8888-8888-888888888882', 'Reading fluency drill; assigned three-sentence journal.')
 on conflict (id) do update set body = excluded.body;
 
 insert into lms_attendance (id, booking_id, student_id, present, marked_at) values
   ('15151515-1515-1515-1515-151515151511', '13131313-1313-1313-1313-131313131311', '99999999-9999-9999-9999-999999999991', true, now() - interval '7 days'),
-  ('15151515-1515-1515-1515-151515151512', '13131313-1313-1313-1313-131313131312', '99999999-9999-9999-9999-999999999993', true, now() - interval '6 days')
+  ('15151515-1515-1515-1515-151515151512', '13131313-1313-1313-1313-131313131312', '99999999-9999-9999-9999-999999999993', true, now() - interval '6 days'),
+  ('15151515-1515-1515-1515-151515151513', '13131313-1313-1313-1313-13131313131a', '99999999-9999-9999-9999-999999999991', true, now() - interval '2 days'),
+  ('15151515-1515-1515-1515-151515151514', '13131313-1313-1313-1313-13131313131b', '99999999-9999-9999-9999-999999999992', true, now() - interval '3 days')
 on conflict (id) do update set present = excluded.present;
 
+-- Extra course + materials + assignment for a fuller demo catalog.
+insert into lms_courses (id, location_id, tutor_profile_id, subject_id, title, description) values
+(
+  'cccccccc-cccc-cccc-cccc-ccccccccccc4',
+  '22222222-2222-2222-2222-222222222222',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4',
+  'Intro to Coding (Scratch → Python)',
+  'First programs, loops, and debugging habits for Grade 6–9.'
+)
+on conflict (id) do update set title = excluded.title, description = excluded.description, updated_at = now();
+
+insert into lms_enrollments (course_id, student_id) values
+  ('cccccccc-cccc-cccc-cccc-ccccccccccc4', '99999999-9999-9999-9999-999999999993'),
+  ('cccccccc-cccc-cccc-cccc-ccccccccccc1', '99999999-9999-9999-9999-999999999992'),
+  ('cccccccc-cccc-cccc-cccc-ccccccccccc4', '99999999-9999-9999-9999-999999999991')
+on conflict do nothing;
+
+insert into lms_materials (id, course_id, title, external_url) values
+  ('dddddddd-dddd-dddd-dddd-ddddddddddd4', 'cccccccc-cccc-cccc-cccc-ccccccccccc4', 'Scratch getting started', 'https://scratch.mit.edu/ideas'),
+  ('dddddddd-dddd-dddd-dddd-ddddddddddd5', 'cccccccc-cccc-cccc-cccc-ccccccccccc1', 'Decimals on the number line', 'https://www.khanacademy.org/math/cc-fifth-grade-math/imp-decimals'),
+  ('dddddddd-dddd-dddd-dddd-ddddddddddd6', 'cccccccc-cccc-cccc-cccc-ccccccccccc2', 'Congruent triangles checklist', 'https://www.khanacademy.org/math/geometry')
+on conflict (id) do update set title = excluded.title, external_url = excluded.external_url;
+
+insert into lms_assignments (id, course_id, title, instructions, due_at, max_score) values
+  ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee4', 'cccccccc-cccc-cccc-cccc-ccccccccccc4', 'Build a Scratch maze', 'Share the project link and write what each sprite does.', now() + interval '9 days', 25),
+  ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee5', 'cccccccc-cccc-cccc-cccc-ccccccccccc1', 'Decimal word problems', 'Solve 8 problems; show place-value reasoning.', now() + interval '4 days', 20)
+on conflict (id) do update set title = excluded.title, instructions = excluded.instructions, due_at = excluded.due_at;
+
 insert into lms_progress (id, student_id, course_id, materials_done, assignments_graded, lessons_attended) values
-  ('16161616-1616-1616-1616-161616161611', '99999999-9999-9999-9999-999999999991', 'cccccccc-cccc-cccc-cccc-ccccccccccc1', 1, 1, 1),
-  ('16161616-1616-1616-1616-161616161612', '99999999-9999-9999-9999-999999999993', 'cccccccc-cccc-cccc-cccc-ccccccccccc2', 1, 1, 1),
-  ('16161616-1616-1616-1616-161616161613', '99999999-9999-9999-9999-999999999992', 'cccccccc-cccc-cccc-cccc-ccccccccccc3', 0, 0, 0)
+  ('16161616-1616-1616-1616-161616161611', '99999999-9999-9999-9999-999999999991', 'cccccccc-cccc-cccc-cccc-ccccccccccc1', 2, 1, 2),
+  ('16161616-1616-1616-1616-161616161612', '99999999-9999-9999-9999-999999999993', 'cccccccc-cccc-cccc-cccc-ccccccccccc2', 2, 1, 1),
+  ('16161616-1616-1616-1616-161616161613', '99999999-9999-9999-9999-999999999992', 'cccccccc-cccc-cccc-cccc-ccccccccccc3', 1, 0, 1),
+  ('16161616-1616-1616-1616-161616161614', '99999999-9999-9999-9999-999999999993', 'cccccccc-cccc-cccc-cccc-ccccccccccc4', 1, 0, 0),
+  ('16161616-1616-1616-1616-161616161615', '99999999-9999-9999-9999-999999999991', 'cccccccc-cccc-cccc-cccc-ccccccccccc4', 0, 0, 0)
 on conflict (id) do update set
   materials_done = excluded.materials_done,
   assignments_graded = excluded.assignments_graded,

@@ -3,41 +3,75 @@ import http from "../../services/http.service";
 import type { Assignment, Availability, Booking, Course, Material, Progress, Student, Subject, TutorCard, TutorProfile } from "../../models";
 import ManageUsersPanel from "../admin/ManageUsersPanel";
 import { useAuth } from "../../../contexts/JWTAuthContext";
+import TablePaginationBar from "../common/TablePaginationBar";
+import { useClientPagination } from "../common/useClientPagination";
 
 export function LessonsPage() {
   const { locationId, currentRole } = useAuth();
   const [rows, setRows] = useState<Booking[]>([]);
   const [note, setNote] = useState("");
-  const load = () => http.get<Booking[]>("/bookings").then((r) => setRows(r.data));
-  useEffect(() => { if (locationId) load(); }, [locationId]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const load = () => {
+    setLoading(true);
+    setError("");
+    return http.get<Booking[]>("/bookings")
+      .then((r) => setRows(Array.isArray(r.data) ? r.data : []))
+      .catch(() => { setRows([]); setError("Could not load lessons. Try refresh, or sign out and back in."); })
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { if (locationId) void load(); }, [locationId]);
+
+  const now = Date.now();
+  const upcoming = rows.filter((l) => new Date(l.startsAt).getTime() >= now);
+  const past = rows.filter((l) => new Date(l.startsAt).getTime() < now);
+
+  const renderLesson = (l: Booking) => (
+    <div className="lesson-row" key={l.id}>
+      <div><strong>{l.studentName}</strong> with {l.tutorName} <span className="badge">{l.status}</span></div>
+      <div className="muted">{new Date(l.startsAt).toLocaleString()} · {l.subjectName} · ${l.price}</div>
+      {l.note ? <p>{l.note}</p> : null}
+      {l.present != null ? <div className="muted">Attendance: {l.present ? "Present" : "Absent"}</div> : null}
+      {l.meetingUrl ? <a href={l.meetingUrl} target="_blank" rel="noreferrer">Meeting link</a> : null}
+      {currentRole === "tutor" && l.status === "requested" ? (
+        <div>
+          <button type="button" onClick={() => http.post(`/bookings/${l.id}/accepted`).then(load)}>Accept</button>
+          <button className="ghost" type="button" onClick={() => http.post(`/bookings/${l.id}/rejected`).then(load)}>Reject</button>
+        </div>
+      ) : null}
+      {currentRole === "tutor" && l.status === "accepted" && new Date(l.startsAt).getTime() <= now + 86400000 ? (
+        <form onSubmit={(e) => { e.preventDefault(); http.post(`/bookings/${l.id}/complete`, { present: true, note }).then(() => { setNote(""); load(); }); }}>
+          <input placeholder="Lesson note" value={note} onChange={(e) => setNote(e.target.value)} />
+          <button type="submit">Complete + mark present</button>
+        </form>
+      ) : null}
+      {currentRole === "parent" && l.status === "requested" ? (
+        <button className="ghost" type="button" onClick={() => http.post(`/bookings/${l.id}/cancelled`).then(load)}>Cancel</button>
+      ) : null}
+    </div>
+  );
 
   return (
     <div>
       <h1>Lessons</h1>
-      {rows.map((l) => (
-        <div className="lesson-row" key={l.id}>
-          <div><strong>{l.studentName}</strong> with {l.tutorName} <span className="badge">{l.status}</span></div>
-          <div className="muted">{new Date(l.startsAt).toLocaleString()} · {l.subjectName} · ${l.price}</div>
-          {l.note ? <p>{l.note}</p> : null}
-          {l.present != null ? <div className="muted">Attendance: {l.present ? "Present" : "Absent"}</div> : null}
-          {l.meetingUrl ? <a href={l.meetingUrl} target="_blank" rel="noreferrer">Meeting link</a> : null}
-          {currentRole === "tutor" && l.status === "requested" ? (
-            <div>
-              <button type="button" onClick={() => http.post(`/bookings/${l.id}/accepted`).then(load)}>Accept</button>
-              <button className="ghost" type="button" onClick={() => http.post(`/bookings/${l.id}/rejected`).then(load)}>Reject</button>
-            </div>
-          ) : null}
-          {currentRole === "tutor" && l.status === "accepted" ? (
-            <form onSubmit={(e) => { e.preventDefault(); http.post(`/bookings/${l.id}/complete`, { present: true, note }).then(() => { setNote(""); load(); }); }}>
-              <input placeholder="Lesson note" value={note} onChange={(e) => setNote(e.target.value)} />
-              <button type="submit">Complete + mark present</button>
-            </form>
-          ) : null}
-          {currentRole === "parent" && l.status === "requested" ? (
-            <button className="ghost" type="button" onClick={() => http.post(`/bookings/${l.id}/cancelled`).then(load)}>Cancel</button>
-          ) : null}
-        </div>
-      ))}
+      {!locationId ? <p className="muted">Select a location to view lessons.</p> : null}
+      {error ? <p className="error">{error}</p> : null}
+      {loading && rows.length === 0 ? <p className="muted">Loading lessons…</p> : null}
+      {!loading && !error && locationId && rows.length === 0 ? (
+        <p className="muted">No lessons for this location yet. Use Schedule to request one, or ask an admin to restore demo data.</p>
+      ) : null}
+      {upcoming.length > 0 ? (
+        <section style={{ marginBottom: "1.2rem" }}>
+          <h2>Upcoming ({upcoming.length})</h2>
+          <div className="grid">{upcoming.map(renderLesson)}</div>
+        </section>
+      ) : null}
+      {past.length > 0 ? (
+        <section>
+          <h2>Past ({past.length})</h2>
+          <div className="grid">{past.map(renderLesson)}</div>
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -193,14 +227,22 @@ export function AssignmentsPage() {
 export function ProgressPage() {
   const { locationId } = useAuth();
   const [rows, setRows] = useState<Progress[]>([]);
+  const { page, setPage, rowsPerPage, setRowsPerPage, pageItems, total } = useClientPagination(rows, 10);
   useEffect(() => { if (locationId) http.get<Progress[]>("/progress").then((r) => setRows(r.data)); }, [locationId]);
   return (
     <div>
       <h1>Learning progress</h1>
       <table className="table">
         <thead><tr><th>Student</th><th>Course</th><th>Materials</th><th>Assignments graded</th><th>Lessons attended</th></tr></thead>
-        <tbody>{rows.map((p) => <tr key={`${p.studentId}-${p.courseId}`}><td>{p.studentName}</td><td>{p.courseTitle}</td><td>{p.materialsDone}</td><td>{p.assignmentsGraded}</td><td>{p.lessonsAttended}</td></tr>)}</tbody>
+        <tbody>{pageItems.map((p) => <tr key={`${p.studentId}-${p.courseId}`}><td>{p.studentName}</td><td>{p.courseTitle}</td><td>{p.materialsDone}</td><td>{p.assignmentsGraded}</td><td>{p.lessonsAttended}</td></tr>)}</tbody>
       </table>
+      <TablePaginationBar
+        page={page}
+        rowsPerPage={rowsPerPage}
+        total={total}
+        onPageChange={setPage}
+        onRowsPerPageChange={setRowsPerPage}
+      />
     </div>
   );
 }

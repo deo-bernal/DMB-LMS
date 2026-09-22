@@ -278,3 +278,58 @@ a.sso-button:hover {
   .shell { grid-template-columns: 1fr; }
   .search-row { grid-template-columns: 1fr; }
 }
+
+/* Portfolio-style table pagination footer */
+.table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.55rem 0.15rem 0.15rem;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted, #64748b);
+}
+.table-pagination-size select {
+  margin-left: 0.4rem;
+  padding: 0.2rem 0.35rem;
+}
+.table-pagination-actions {
+  display: inline-flex;
+  gap: 0.2rem;
+}
+.table-pagination-actions button {
+  min-width: 2rem;
+  padding: 0.15rem 0.45rem;
+  line-height: 1.2;
+}
+.table-pagination-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.table-actions {
+  display: inline-flex;
+  gap: 0.65rem;
+  align-items: center;
+  white-space: nowrap;
+}
+.table-actions .link-edit,
+.table-actions .link-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0;
+  font-family: inherit;
+}
+.table-actions .link-edit { color: #2563eb; }
+.table-actions .link-delete { color: #dc2626; }
+.table-actions .link-edit:disabled,
+.table-actions .link-delete:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

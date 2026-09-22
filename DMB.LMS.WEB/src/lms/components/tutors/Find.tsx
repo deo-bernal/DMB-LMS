@@ -15,7 +15,10 @@ export default function FindTutors() {
     setRows(res.data);
   };
 
-  useEffect(() => { if (locationId) void search(); }, [locationId]);
+  useEffect(() => {
+    if (locationId) void search();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locationId]);
 
   return (
     <div>
